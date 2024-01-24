@@ -11,7 +11,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
 d3.json(url).then(function(data) {
-  console.log(data);
 
   // Loop over each earthquake feature
   data.features.forEach(function(feature) {
@@ -19,18 +18,13 @@ d3.json(url).then(function(data) {
     let coordinates = feature.geometry.coordinates;
     let magnitude = feature.properties.mag;
 
-    // Check if coordinates and magnitude are valid numbers
-    if (!coordinates || coordinates.length !== 3 || isNaN(magnitude)) {
-      console.warn('Invalid data for earthquake:', feature);
-      return; // Skip this iteration
-    }
 
     let longitude = coordinates[0];
     let latitude = coordinates[1];
     let depth = coordinates[2];
 
     // Define marker size based on magnitude (ensure it's always a sensible size)
-    let markerSize = Math.max(10 * Math.sqrt(magnitude));
+    let markerSize = 10 * Math.sqrt(Math.max(magnitude, 0));
 
     // Define a color based on the earthquake depth
     let depthColor = getColor(depth);
@@ -41,7 +35,10 @@ d3.json(url).then(function(data) {
       fillColor: depthColor,
       fillOpacity: 0.75,
       radius: markerSize
-    }).bindPopup("<h1>" + feature.properties.title + "</h1>");
+    }).bindPopup("<h1>" + feature.properties.title + 
+    "</h1><p><strong>Magnitude:</strong> " + magnitude + 
+    "<br><strong>Depth:</strong> " + depth + " km</p>");
+
 
     quakeMarker.addTo(myMap);
   });
@@ -51,7 +48,7 @@ let legend = L.control({ position: 'bottomright' });
 
 legend.onAdd = function (map) {
   let div = L.DomUtil.create('div', 'info legend'),
-      depthLevels = [0, 10, 30, 50, 70, 90],
+      depthLevels = [-10, 10, 30, 50, 70, 90],
       labels = ['<strong>Depth</strong>'];
 
   div.style.backgroundColor = 'white';
@@ -75,7 +72,7 @@ legend.onAdd = function (map) {
 // Function to determine color based on depth
 function getColor(d) {
   return d > 90 ? 'darkred' :
-         d > 70 ? 'red' : // Assuming 'lightred' should be 'red'
+         d > 70 ? 'red' : 
          d > 50 ? 'orange' :
          d > 30 ? 'yellow' :
          d > 10 ? 'lightgreen' :
